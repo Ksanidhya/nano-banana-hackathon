@@ -1,7 +1,7 @@
 import { StoryPage } from '../types';
 
 const PAGE_DURATION_SECONDS = 10;
-const MUSIC_URL = "https://cdn.pixabay.com/download/audio/2021/11/23/audio_831b18d227.mp3"; 
+const MUSIC_URL = "https://pixabay.com/music/lullabies-lullaby-baby-sleep-music-388567/"; 
 
 // Helper function to draw a single page frame on the canvas
 const drawFrame = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, image: HTMLImageElement, text: string) => {
@@ -89,18 +89,26 @@ export const generateVideo = async (pages: StoryPage[], onProgress: (message: st
     );
     
     onProgress('Loading music...');
-    const audio = new Audio(MUSIC_URL);
-    audio.crossOrigin = "anonymous";
-    await new Promise<void>((resolve, reject) => {
-        audio.oncanplaythrough = () => resolve();
-        audio.onerror = () => reject(new Error('Failed to load audio.'));
-        audio.load();
-    });
-
     const audioContext = new AudioContext();
-    const source = audioContext.createMediaElementSource(audio);
+    const audioBuffer = await fetch(MUSIC_URL)
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`Failed to fetch audio: ${res.status} ${res.statusText}`);
+            }
+            return res.arrayBuffer();
+        })
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .catch(err => {
+             console.error("Audio loading/decoding failed:", err);
+             throw new Error('Failed to load or decode audio. Please check your network connection.');
+        });
+        
+    const audioSource = audioContext.createBufferSource();
+    audioSource.buffer = audioBuffer;
+    audioSource.loop = true;
+
     const dest = audioContext.createMediaStreamDestination();
-    source.connect(dest);
+    audioSource.connect(dest);
 
     const videoStream = canvas.captureStream(30);
     const combinedStream = new MediaStream([...videoStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
@@ -134,7 +142,7 @@ export const generateVideo = async (pages: StoryPage[], onProgress: (message: st
 
         (async () => {
             recorder.start();
-            audio.play();
+            audioSource.start(0);
     
             for (let i = 0; i < pages.length; i++) {
                 onProgress(`Encoding page ${i + 1}/${pages.length}...`);
@@ -143,10 +151,9 @@ export const generateVideo = async (pages: StoryPage[], onProgress: (message: st
             }
             
             recorder.stop();
-            audio.pause();
+            audioSource.stop();
         })().catch(err => {
             if (recorder.state === 'recording') recorder.stop();
-            audio.pause();
             audioContext.close();
             reject(err);
         });
