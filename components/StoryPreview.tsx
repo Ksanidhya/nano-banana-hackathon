@@ -158,15 +158,15 @@ export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWa
           <div
             key={`pdf-${index}`}
             id={`pdf-page-${index}`}
-            className="w-[842px] h-[595px] bg-white flex flex-col"
+            className="w-[1684px] h-[1190px] bg-white flex flex-col"
           >
-            <div className="w-full h-[400px] bg-slate-100">
+            <div className="w-full h-[800px] bg-slate-100">
                 <img src={page.imageUrl} alt="" className="w-full h-full object-cover" crossOrigin="anonymous"/>
             </div>
-            <div className="flex-grow flex items-center justify-center p-4">
-              <p style={{ fontFamily: 'Poppins, sans-serif', fontSize: '22px', textAlign: 'center' }}>{page.text}</p>
+            <div className="flex-grow flex items-center justify-center p-8">
+              <p style={{ fontFamily: 'Poppins, sans-serif', fontSize: '44px', textAlign: 'center' }}>{page.text}</p>
             </div>
-             <div className="text-right p-2 text-sm text-slate-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
+             <div className="text-right p-4 text-2xl text-slate-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {index > 0 ? `Page ${index}`: ''}
             </div>
           </div>
