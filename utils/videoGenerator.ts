@@ -3,7 +3,7 @@ import { StoryPage } from '../types';
 const PAGE_DURATION_MS = 10000; // Each page's cycle is 10 seconds
 const TRANSITION_DURATION_MS = 1500; // 1.5 second cross-fade
 const TEXT_FADE_DURATION_MS = 500; // 0.5 second fade for text
-const MUSIC_URL = "https://archive.org/download/GoodNightLullabye/Good_Night_Lullabye.mp3"; 
+const MUSIC_URL = "https://cdn.pixabay.com/download/audio/2025/08/12/audio_69862e2bf1.mp3?filename=lullaby-baby-sleep-music-388567.mp3"; 
 
 // Helper to wrap text in the canvas
 const wrapText = (ctx: CanvasRenderingContext2D, textToWrap: string, startX: number, startY: number, maxWidth: number, lineHeight: number) => {

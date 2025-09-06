@@ -7,7 +7,7 @@ type VideoPlayerProps = {
   onClose: () => void;
 };
 
-const MUSIC_URL = "https://archive.org/download/GoodNightLullabye/Good_Night_Lullabye.mp3"; // Royalty-free soft lullaby from archive.org
+const MUSIC_URL = "https://commondatastorage.googleapis.com/codeskulptor-assets/sounddogs/soundtrack.mp3"; // Royalty-free music
 const PAGE_DURATION = 10000; // 10 seconds per page
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({ pages, onClose }) => {
