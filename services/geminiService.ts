@@ -1,4 +1,4 @@
-import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/genai";
 import { StoryPage, StoryStructure } from '../types';
 import { fileToBase64 } from "../utils/fileUtils";
 
@@ -87,22 +87,26 @@ async function generateStoryStructure(prompt: string, image: File | null): Promi
 }
 
 async function generateImage(prompt: string): Promise<string> {
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image-preview',
+        contents: {
+            parts: [{ text: prompt }],
+        },
         config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio: '4:3',
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
         },
     });
-    
-    if (!response.generatedImages || response.generatedImages.length === 0) {
-        throw new Error("Image generation failed to produce an image.");
+
+    if (response.candidates && response.candidates.length > 0) {
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                const base64ImageBytes: string = part.inlineData.data;
+                return `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
+            }
+        }
     }
     
-    const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-    return `data:image/jpeg;base64,${base64ImageBytes}`;
+    throw new Error("Image generation failed to produce an image.");
 }
 
 export async function generateStoryAndImages(
