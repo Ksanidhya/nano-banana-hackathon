@@ -5,6 +5,7 @@ import { Loader } from './components/Loader';
 import { generateStoryAndImages } from './services/geminiService';
 import { AppState, StoryPage } from './types';
 import { LogoIcon } from './components/Icons';
+import { Notification } from './components/Notification';
 
 function App() {
   const [appState, setAppState] = useState<AppState>(AppState.IDLE);
@@ -15,6 +16,7 @@ function App() {
   const [totalPages, setTotalPages] = useState(0);
   const [storyTitle, setStoryTitle] = useState('');
   const [musicUrl, setMusicUrl] = useState('');
+  const [notification, setNotification] = useState<string | null>(null);
 
   const handleStoryGeneration = useCallback(async (prompt: string, image: File | null, enableNarration: boolean, elevenLabsApiKey: string, voiceId: string) => {
     setAppState(AppState.LOADING);
@@ -25,6 +27,7 @@ function App() {
     setTotalPages(0);
     setStoryTitle('');
     setMusicUrl('');
+    setNotification(null);
 
     try {
       await generateStoryAndImages(
@@ -44,7 +47,8 @@ function App() {
             setTotalPages(total);
             setStoryTitle(title);
             setMusicUrl(url);
-        }
+        },
+        (message) => setNotification(message)
       );
     } catch (err) {
       console.error(err);
@@ -64,6 +68,7 @@ function App() {
     setTotalPages(0);
     setStoryTitle('');
     setMusicUrl('');
+    setNotification(null);
   };
   
   const renderContent = () => {
@@ -116,6 +121,7 @@ function App() {
           </p>
         </header>
         <div className="max-w-4xl mx-auto">
+          {notification && <Notification message={notification} onClose={() => setNotification(null)} />}
           {renderContent()}
         </div>
       </main>

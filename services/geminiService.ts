@@ -180,7 +180,8 @@ export async function generateStoryAndImages(
   voiceId: string,
   onProgress: (message: string) => void,
   onPageGenerated: (page: StoryPage) => void,
-  onStructureReady: (totalPages: number, title: string, musicUrl: string) => void
+  onStructureReady: (totalPages: number, title: string, musicUrl: string) => void,
+  onNotification: (message: string) => void
 ): Promise<void> {
   onProgress('Crafting the storyline...');
   const storyStructure = await generateStoryStructure(prompt, image);
@@ -195,6 +196,26 @@ export async function generateStoryAndImages(
   const totalPages = storyStructure.pages.length + 1;
   onStructureReady(totalPages, storyStructure.title, musicUrl);
 
+  let narrationEnabledForThisStory = enableNarration;
+  let narrationErrorCommunicated = false;
+
+  const handleNarrationError = (error: unknown) => {
+    console.error("Narration generation failed:", error);
+    if (!narrationErrorCommunicated) {
+      let errorMessage = "Narration failed. Continuing with background music only.";
+       if (error instanceof Error) {
+        if (error.message.includes("invalid") || error.message.includes("API Key")) {
+           errorMessage = "Narration failed: The provided ElevenLabs API key is invalid or has expired. Continuing with music only.";
+        } else if (error.message.includes("credits")) {
+            errorMessage = "Narration failed: Insufficient ElevenLabs credits. Continuing with music only.";
+        }
+      }
+      onNotification(errorMessage);
+      narrationErrorCommunicated = true;
+    }
+    narrationEnabledForThisStory = false;
+  };
+
   // Add title page
   const titlePageText = storyStructure.title;
   const titleImagePrompt = `A beautiful and enchanting title card for a children's story called '${storyStructure.title}'. The style should be whimsical, soft pastel colors, storybook style. Incorporate elements from the story, like: ${storyStructure.pages[0].imagePrompt}`;
@@ -202,15 +223,14 @@ export async function generateStoryAndImages(
   const titleImageUrl = await generateImage(titleImagePrompt);
   const titlePage: StoryPage = { text: titlePageText, imageUrl: titleImageUrl, textEffect: 'grand, magical title' };
 
-  if (enableNarration) {
+  if (narrationEnabledForThisStory) {
     onProgress(`Narrating title page...`);
     try {
         const { audioUrl, duration } = await generateNarration(titlePage.text, elevenLabsApiKey, voiceId);
         titlePage.audioUrl = audioUrl;
         titlePage.audioDuration = duration;
     } catch (e) {
-        console.error(e);
-        throw e;
+        handleNarrationError(e);
     }
   }
   onPageGenerated(titlePage);
@@ -221,15 +241,14 @@ export async function generateStoryAndImages(
     const imageUrl = await generateImage(page.imagePrompt);
     const storyPage: StoryPage = { text: page.scene, imageUrl: imageUrl, textEffect: page.textEffectPrompt };
     
-    if (enableNarration) {
+    if (narrationEnabledForThisStory) {
         onProgress(`Narrating page ${i + 1}...`);
         try {
             const { audioUrl, duration } = await generateNarration(storyPage.text, elevenLabsApiKey, voiceId);
             storyPage.audioUrl = audioUrl;
             storyPage.audioDuration = duration;
         } catch (e) {
-            console.error(e);
-            throw e;
+            handleNarrationError(e);
         }
     }
     onPageGenerated(storyPage);

@@ -17,8 +17,8 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [enableNarration, setEnableNarration] = useState(false);
-  const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
+  const [enableNarration, setEnableNarration] = useState(true);
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState('sk_1f3f71ed0dbb2a685dbf45bcb4eb0f61e4f07d7f64715ea0');
   const [voiceId, setVoiceId] = useState(voiceOptions[0].id);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -122,7 +122,7 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
             <label className="flex items-center justify-between cursor-pointer">
                 <div className="mr-3">
                     <p className="block text-lg font-semibold text-slate-700">Add Narration (Text-to-Speech)</p>
-                    <p className="text-sm text-slate-500">Generates a voiceover for the story. <br/><strong className="text-slate-600">(Requires ElevenLabs API Key)</strong></p>
+                    <p className="text-sm text-slate-500">Generates a voiceover for the story using ElevenLabs.</p>
                 </div>
                 <div className="relative">
                     <input type="checkbox" className="peer sr-only" checked={enableNarration} onChange={() => setEnableNarration(!enableNarration)} />
@@ -144,6 +144,7 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
                             placeholder="Enter your API Key here"
                             className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition"
                         />
+                         <p className="text-xs text-slate-500 mt-2">A default key with usage limits is provided. For unlimited narration, please use your own ElevenLabs API key. If narration is not needed, you can turn off the toggle above.</p>
                     </div>
                     <div>
                         <label htmlFor="voice-select" className="block text-sm font-semibold text-slate-600 mb-2">
