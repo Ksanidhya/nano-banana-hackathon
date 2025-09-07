@@ -6,10 +6,10 @@ type StoryInputFormProps = {
 };
 
 const voiceOptions = [
-    { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Storyteller (Woman)' },
-    { id: 'ZQe5CZNOzWTMtZkvx1I5', name: 'Storyteller (Man)' },
-    { id: 'piTKgcLEGmPE4e6mEKli', name: 'Young Girl' },
-    { id: 'Yko7N4DMbrmiB2zt2s4i', name: 'Young Boy' }
+    { id: '21m00Tcm4TlvDq8ikWAM', name: 'Storyteller (Woman)' },
+    { id: 'GBv7mTt0atIp3Br8iCZE', name: 'Storyteller (Man)' },
+    { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Young Girl' },
+    { id: 'SAz9YHcvj6GT2YYXdXww', name: 'Young Boy' }
 ];
 
 export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) => {

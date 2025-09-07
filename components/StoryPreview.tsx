@@ -22,9 +22,6 @@ export const getTextStyleFromPrompt = (prompt: string): { className: string; sty
     let className = '';
     const style: React.CSSProperties = {};
 
-    if (p.includes('sparkl') || p.includes('glitter')) {
-      className += ' text-effect-sparkle';
-    }
     if (p.includes('float') || p.includes('gentle')) {
       className += ' text-effect-float';
     }

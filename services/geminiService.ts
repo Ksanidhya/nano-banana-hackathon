@@ -1,4 +1,4 @@
-import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/genai";
 import { StoryPage, StoryStructure } from '../types';
 import { fileToBase64 } from "../utils/fileUtils";
 import { musicTracks } from '../utils/music';
@@ -25,7 +25,7 @@ const storySchema = {
         properties: {
           scene: {
             type: Type.STRING,
-            description: "One or two paragraphs of text for this page of the story."
+            description: "Two or three paragraphs of text for this page of the story."
           },
           imagePrompt: {
             type: Type.STRING,
@@ -107,8 +107,8 @@ async function generateStoryStructure(prompt: string, image: File | null): Promi
 2. Structure the story into a JSON object that strictly follows the provided schema. The object must contain a 'title' (string) and an array of 'pages'.
 3. The story must have between 6 and 8 pages.
 4. For each page in the 'pages' array, create an object with three properties:
-   - \`scene\`: One or two paragraphs of text for the story on that page.
-   - \`imagePrompt\`: A detailed, artistic prompt for an image generation model. This prompt should describe the scene in a 'whimsical, enchanting children's book illustration' style with soft pastel colors.
+   - \`scene\`: two or three paragraphs of text for the story on that page.Keep it concise and simple for young children."
+   - \`imagePrompt\`: A detailed, artistic prompt for an image generation model. This prompt should describe the scene in a 'whimiscal, enchanting children's book illustration' style with soft pastel colors.
    - \`textEffectPrompt\`: A short, descriptive prompt for a stylistic text effect that matches the mood of the scene (e.g., 'sparkling golden text', 'gentle floating words', 'handwritten cursive', 'bold and adventurous font').
 5. **Crucially**, ensure that any characters are described consistently in every \`imagePrompt\` to maintain their appearance throughout the story's illustrations.
 
@@ -150,19 +150,23 @@ async function generateStoryStructure(prompt: string, image: File | null): Promi
 }
 
 async function generateImage(prompt: string): Promise<string> {
-    const response = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image-preview',
+        contents: {
+            parts: [{ text: prompt }],
+        },
         config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/png',
-          aspectRatio: '16:9',
+            responseModalities: [Modality.IMAGE, Modality.TEXT],
         },
     });
 
-    if (response.generatedImages && response.generatedImages.length > 0) {
-        const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-        return `data:image/png;base64,${base64ImageBytes}`;
+     if (response.candidates && response.candidates.length > 0) {
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                const base64ImageBytes: string = part.inlineData.data;
+                return `data:${part.inlineData.mimeType};base64,${base64ImageBytes}`;
+            }
+        }
     }
     
     throw new Error("Image generation failed to produce an image.");

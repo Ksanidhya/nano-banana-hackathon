@@ -111,12 +111,6 @@ export const generateVideo = async (pages: StoryPage[], musicUrl: string, onProg
     await document.fonts.load("48px 'Chewy'");
     await document.fonts.load("48px 'Pacifico'");
     
-    const canvas = document.createElement('canvas');
-    canvas.width = 1920;
-    canvas.height = 1080;
-    const ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) throw new Error('Cannot create canvas context');
-
     onProgress('Loading illustrations...');
     const images = await Promise.all(
         pages.map(page => new Promise<HTMLImageElement>((resolve, reject) => {
@@ -128,6 +122,30 @@ export const generateVideo = async (pages: StoryPage[], musicUrl: string, onProg
         }))
     );
     
+    if (images.length === 0) {
+        throw new Error('No images available to generate video.');
+    }
+    
+    // Dynamically set canvas size based on the first image's aspect ratio
+    const firstImage = images[0];
+    const canvas = document.createElement('canvas');
+    const MAX_DIMENSION = 1920;
+    const aspectRatio = firstImage.width / firstImage.height;
+
+    if (aspectRatio >= 1) { // Landscape or square
+        canvas.width = MAX_DIMENSION;
+        canvas.height = MAX_DIMENSION / aspectRatio;
+    } else { // Portrait
+        canvas.height = MAX_DIMENSION;
+        canvas.width = MAX_DIMENSION * aspectRatio;
+    }
+    // Ensure dimensions are even numbers for some encoders
+    canvas.width = Math.round(canvas.width / 2) * 2;
+    canvas.height = Math.round(canvas.height / 2) * 2;
+    
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) throw new Error('Cannot create canvas context');
+
     onProgress('Preparing audio mix...');
     
     const pageTimings: {start: number; duration: number}[] = [];
