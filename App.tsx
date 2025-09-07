@@ -18,7 +18,7 @@ function App() {
   const [storyTitle, setStoryTitle] = useState('');
   const [musicUrl, setMusicUrl] = useState('');
 
-  const handleStoryGeneration = useCallback(async (prompt: string, image: File | null, enableNarration: boolean, elevenLabsApiKey: string) => {
+  const handleStoryGeneration = useCallback(async (prompt: string, image: File | null, enableNarration: boolean, elevenLabsApiKey: string, voiceId: string) => {
     setAppState(AppState.LOADING);
     setError(null);
     setStoryPages([]);
@@ -34,6 +34,7 @@ function App() {
         image,
         enableNarration,
         elevenLabsApiKey,
+        voiceId,
         (progress) => setProgressMessage(progress),
         (page) => {
           setStoryPages(prevPages => [...prevPages, page]);

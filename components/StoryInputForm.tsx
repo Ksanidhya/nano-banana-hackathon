@@ -2,8 +2,15 @@ import React, { useState, useRef } from 'react';
 import { UploadIcon, SparklesIcon } from './Icons';
 
 type StoryInputFormProps = {
-  onGenerate: (prompt: string, image: File | null, enableNarration: boolean, elevenLabsApiKey: string) => void;
+  onGenerate: (prompt: string, image: File | null, enableNarration: boolean, elevenLabsApiKey: string, voiceId: string) => void;
 };
+
+const voiceOptions = [
+    { id: 'FGY2WhTYpPnrIDTdsKH5', name: 'Storyteller (Woman)' },
+    { id: 'ZQe5CZNOzWTMtZkvx1I5', name: 'Storyteller (Man)' },
+    { id: 'piTKgcLEGmPE4e6mEKli', name: 'Young Girl' },
+    { id: 'Yko7N4DMbrmiB2zt2s4i', name: 'Young Boy' }
+];
 
 export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) => {
   const [prompt, setPrompt] = useState('');
@@ -12,6 +19,7 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
   const [isGenerating, setIsGenerating] = useState(false);
   const [enableNarration, setEnableNarration] = useState(false);
   const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
+  const [voiceId, setVoiceId] = useState(voiceOptions[0].id);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +59,7 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
           return;
       }
       setIsGenerating(true);
-      onGenerate(prompt, imageFile, enableNarration, elevenLabsApiKey);
+      onGenerate(prompt, imageFile, enableNarration, elevenLabsApiKey, voiceId);
     }
   };
 
@@ -123,18 +131,35 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
                 </div>
             </label>
              {enableNarration && (
-                <div className="mt-4">
-                    <label htmlFor="elevenlabs-key" className="block text-sm font-semibold text-slate-600 mb-2">
-                        ElevenLabs API Key
-                    </label>
-                    <input
-                        id="elevenlabs-key"
-                        type="password"
-                        value={elevenLabsApiKey}
-                        onChange={(e) => setElevenLabsApiKey(e.target.value)}
-                        placeholder="Enter your API Key here"
-                        className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition"
-                    />
+                <div className="mt-4 space-y-4">
+                    <div>
+                        <label htmlFor="elevenlabs-key" className="block text-sm font-semibold text-slate-600 mb-2">
+                            ElevenLabs API Key
+                        </label>
+                        <input
+                            id="elevenlabs-key"
+                            type="password"
+                            value={elevenLabsApiKey}
+                            onChange={(e) => setElevenLabsApiKey(e.target.value)}
+                            placeholder="Enter your API Key here"
+                            className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="voice-select" className="block text-sm font-semibold text-slate-600 mb-2">
+                            Choose a Voice
+                        </label>
+                        <select
+                            id="voice-select"
+                            value={voiceId}
+                            onChange={(e) => setVoiceId(e.target.value)}
+                            className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition bg-white"
+                        >
+                            {voiceOptions.map(option => (
+                                <option key={option.id} value={option.id}>{option.name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             )}
         </div>

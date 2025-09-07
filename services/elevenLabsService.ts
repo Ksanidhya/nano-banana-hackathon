@@ -1,6 +1,3 @@
-// A calm, soothing female voice from the ElevenLabs library (Mimi)
-const VOICE_ID = 'FGY2WhTYpPnrIDTdsKH5';
-
 const getAudioDuration = (url: string): Promise<number> => {
     return new Promise((resolve) => {
         const audio = document.createElement('audio');
@@ -10,7 +7,7 @@ const getAudioDuration = (url: string): Promise<number> => {
     });
 };
 
-export async function generateNarration(text: string, apiKey: string): Promise<{ audioUrl: string; duration: number }> {
+export async function generateNarration(text: string, apiKey: string, voiceId: string): Promise<{ audioUrl: string; duration: number }> {
   if (!apiKey) {
     throw new Error("Narration failed: ElevenLabs API Key was not provided.");
   }
@@ -19,7 +16,7 @@ export async function generateNarration(text: string, apiKey: string): Promise<{
     const { ElevenLabsClient } = await import('@elevenlabs/elevenlabs-js');
     const client = new ElevenLabsClient({ apiKey });
 
-    const audioStream = await client.textToSpeech.convert(VOICE_ID, {
+    const audioStream = await client.textToSpeech.convert(voiceId, {
       text: text,
       modelId: 'eleven_multilingual_v2',
       outputFormat: 'mp3_44100_128',

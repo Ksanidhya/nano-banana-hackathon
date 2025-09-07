@@ -173,6 +173,7 @@ export async function generateStoryAndImages(
   image: File | null,
   enableNarration: boolean,
   elevenLabsApiKey: string,
+  voiceId: string,
   onProgress: (message: string) => void,
   onPageGenerated: (page: StoryPage) => void,
   onStructureReady: (totalPages: number, title: string, musicUrl: string) => void
@@ -200,7 +201,7 @@ export async function generateStoryAndImages(
   if (enableNarration) {
     onProgress(`Narrating title page...`);
     try {
-        const { audioUrl, duration } = await generateNarration(titlePage.text, elevenLabsApiKey);
+        const { audioUrl, duration } = await generateNarration(titlePage.text, elevenLabsApiKey, voiceId);
         titlePage.audioUrl = audioUrl;
         titlePage.audioDuration = duration;
     } catch (e) {
@@ -219,7 +220,7 @@ export async function generateStoryAndImages(
     if (enableNarration) {
         onProgress(`Narrating page ${i + 1}...`);
         try {
-            const { audioUrl, duration } = await generateNarration(storyPage.text, elevenLabsApiKey);
+            const { audioUrl, duration } = await generateNarration(storyPage.text, elevenLabsApiKey, voiceId);
             storyPage.audioUrl = audioUrl;
             storyPage.audioDuration = duration;
         } catch (e) {
