@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { StoryInputForm } from './components/StoryInputForm';
 import { StoryPreview } from './components/StoryPreview';
 import { Loader } from './components/Loader';
-import { VideoPlayer } from './components/VideoPlayer';
 import { generateStoryAndImages } from './services/geminiService';
 import { AppState, StoryPage } from './types';
 import { LogoIcon } from './components/Icons';
@@ -12,7 +11,6 @@ function App() {
   const [storyPages, setStoryPages] = useState<StoryPage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [progressMessage, setProgressMessage] = useState<string>('');
-  const [showVideo, setShowVideo] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const [storyTitle, setStoryTitle] = useState('');
@@ -62,17 +60,12 @@ function App() {
     setStoryPages([]);
     setError(null);
     setProgressMessage('');
-    setShowVideo(false);
     setIsGenerating(false);
     setTotalPages(0);
     setStoryTitle('');
     setMusicUrl('');
   };
   
-  const handleWatchVideo = () => {
-    setShowVideo(true);
-  };
-
   const renderContent = () => {
     switch (appState) {
       case AppState.LOADING:
@@ -82,7 +75,6 @@ function App() {
           <StoryPreview
             pages={storyPages}
             onReset={handleReset}
-            onWatchVideo={handleWatchVideo}
             isGenerating={isGenerating}
             progressMessage={progressMessage}
             totalPages={totalPages}
@@ -126,9 +118,6 @@ function App() {
         <div className="max-w-4xl mx-auto">
           {renderContent()}
         </div>
-        {showVideo && (
-          <VideoPlayer pages={storyPages} onClose={() => setShowVideo(false)} musicUrl={musicUrl} />
-        )}
       </main>
     </div>
   );

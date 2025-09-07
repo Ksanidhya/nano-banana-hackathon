@@ -2,12 +2,11 @@ import React, { useState, useRef, useCallback } from 'react';
 import { StoryPage } from '../types';
 import { generatePdf } from '../utils/pdfGenerator';
 import { generateVideo } from '../utils/videoGenerator';
-import { BookIcon, VideoIcon, BackIcon, PrevIcon, NextIcon, DownloadIcon } from './Icons';
+import { BookIcon, BackIcon, PrevIcon, NextIcon, DownloadIcon } from './Icons';
 
 type StoryPreviewProps = {
   pages: StoryPage[];
   onReset: () => void;
-  onWatchVideo: () => void;
   isGenerating: boolean;
   progressMessage: string;
   totalPages: number;
@@ -35,7 +34,7 @@ export const getTextStyleFromPrompt = (prompt: string): { className: string; sty
     return { className: className.trim(), style };
 };
 
-export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWatchVideo, isGenerating, progressMessage, totalPages, storyTitle, musicUrl }) => {
+export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, isGenerating, progressMessage, totalPages, storyTitle, musicUrl }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState('');
@@ -148,7 +147,7 @@ export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWa
         </div>
     )}
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
         <button
           onClick={onReset}
           className="flex items-center justify-center gap-2 px-6 py-3 text-lg font-semibold text-slate-700 bg-white border-2 border-slate-300 rounded-full hover:bg-slate-100 focus:outline-none focus:ring-4 focus:ring-slate-200 transition-all transform hover:scale-105"
@@ -171,14 +170,6 @@ export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWa
         >
           <DownloadIcon className="h-6 w-6" />
           {isGeneratingVideo ? videoProgress || 'Creating Video...' : 'Download Video'}
-        </button>
-        <button
-          onClick={onWatchVideo}
-          disabled={isGenerating}
-          className="flex items-center justify-center gap-2 px-6 py-3 text-lg font-semibold text-white bg-purple-500 rounded-full hover:bg-purple-600 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all disabled:bg-slate-400 disabled:cursor-not-allowed transform hover:scale-105"
-        >
-          <VideoIcon className="h-6 w-6" />
-          Watch Slideshow
         </button>
       </div>
 

@@ -166,9 +166,10 @@ export const generateVideo = async (pages: StoryPage[], musicUrl: string, onProg
     musicSource.buffer = musicBuffer;
     musicSource.loop = true;
     const musicGain = audioRenderContext.createGain();
-    musicGain.gain.setValueAtTime(hasNarration ? 0.1 : 0.25, 0);
+    musicGain.gain.setValueAtTime(hasNarration ? 0.25 : 0.4, 0);
     musicSource.connect(musicGain);
     musicGain.connect(audioRenderContext.destination);
+    musicSource.start(0);
 
     // 2. Narration Tracks (if they exist)
     if (hasNarration) {
@@ -232,7 +233,6 @@ export const generateVideo = async (pages: StoryPage[], musicUrl: string, onProg
         };
 
         recorder.start();
-        musicSource.start(0);
         finishedBufferSource.start(0);
         
         let startTime: number | null = null;

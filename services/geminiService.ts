@@ -19,13 +19,13 @@ const storySchema = {
     },
     pages: {
       type: Type.ARRAY,
-      description: "An array of pages for the story, between 6 and 8 pages long.",
+      description: "An array of pages for the story, between 5 and 7 pages long.",
       items: {
         type: Type.OBJECT,
         properties: {
           scene: {
             type: Type.STRING,
-            description: "Two or three paragraphs of text for this page of the story."
+            description: "A short paragraph for this page of the story, written in simple, easy-to-understand language for a young child (ages 3-5)."
           },
           imagePrompt: {
             type: Type.STRING,
@@ -105,9 +105,9 @@ async function generateStoryStructure(prompt: string, image: File | null): Promi
 **Instructions:**
 1. Read the user's story idea below.
 2. Structure the story into a JSON object that strictly follows the provided schema. The object must contain a 'title' (string) and an array of 'pages'.
-3. The story must have between 6 and 8 pages.
+3. The story must have between 5 and 7 pages.
 4. For each page in the 'pages' array, create an object with three properties:
-   - \`scene\`: two or three paragraphs of text for the story on that page.Keep it concise and simple for young children."
+   - \`scene\`: A very short paragraph for the story on that page (2-4 simple sentences). Use easy-to-understand language suitable for a toddler or preschooler.
    - \`imagePrompt\`: A detailed, artistic prompt for an image generation model. This prompt should describe the scene in a 'whimiscal, enchanting children's book illustration' style with soft pastel colors.
    - \`textEffectPrompt\`: A short, descriptive prompt for a stylistic text effect that matches the mood of the scene (e.g., 'sparkling golden text', 'gentle floating words', 'handwritten cursive', 'bold and adventurous font').
 5. **Crucially**, ensure that any characters are described consistently in every \`imagePrompt\` to maintain their appearance throughout the story's illustrations.
