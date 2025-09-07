@@ -1,9 +1,8 @@
 import { StoryPage } from '../types';
 
-const PAGE_DURATION_MS = 10000; // Each page's cycle is 10 seconds
+const PAGE_DURATION_MS = 10000; // Each page's cycle is 10 seconds for non-narrated
 const TRANSITION_DURATION_MS = 1500; // 1.5 second cross-fade
 const TEXT_FADE_DURATION_MS = 500; // 0.5 second fade for text
-const MUSIC_URL = "https://cdn.pixabay.com/download/audio/2025/08/12/audio_69862e2bf1.mp3?filename=lullaby-baby-sleep-music-388567.mp3"; 
 
 // Helper to wrap text in the canvas
 const wrapText = (ctx: CanvasRenderingContext2D, textToWrap: string, startX: number, startY: number, maxWidth: number, lineHeight: number) => {
@@ -52,29 +51,65 @@ const drawImageWithLetterbox = (ctx: CanvasRenderingContext2D, canvas: HTMLCanva
     ctx.drawImage(image, x, y, drawWidth, drawHeight);
 };
 
-// Helper to draw the text overlay with fade animation
-const drawTextOverlay = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, text: string, opacity: number) => {
+// Helper to draw the text overlay with fade and other effects
+const drawTextOverlay = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, text: string, opacity: number, textEffect: string, elapsedTime: number) => {
     if (opacity <= 0.01) return; // Don't draw if invisible
 
     const textBgHeight = canvas.height * 0.25;
     
     // Draw text background
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.6 * opacity})`;
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.4 * opacity})`;
     ctx.fillRect(0, canvas.height - textBgHeight, canvas.width, textBgHeight);
 
-    // Draw text
-    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    const fontSize = Math.max(18, canvas.height / 30);
-    ctx.font = `${fontSize}px Poppins, sans-serif`;
+    // Apply styles based on prompt
+    const p = textEffect.toLowerCase();
+    let yOffset = 0;
+    const fontSize = Math.max(22, canvas.height / 25);
+    
+    // Default styles
+    ctx.font = `${fontSize}px 'Chewy', cursive`;
+    ctx.fillStyle = `rgba(212, 175, 55, ${opacity})`; // Dark Golden color #D4AF37
+    ctx.shadowColor = `rgba(0, 0, 0, ${0.7 * opacity})`;
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 3;
+
+    if (p.includes('sparkl') || p.includes('golden')) {
+        const shimmer = Math.sin(elapsedTime / 300) * 5 + 10;
+        ctx.shadowColor = `rgba(255, 215, 0, ${0.8 * opacity})`;
+        ctx.shadowBlur = shimmer;
+    }
+    if (p.includes('float') || p.includes('gentle')) {
+        yOffset = Math.sin(elapsedTime / 800) * (canvas.height / 250);
+    }
+    if (p.includes('handwritten') || p.includes('cursive')) {
+        ctx.font = `${fontSize * 1.1}px 'Pacifico', cursive`;
+    }
+    if (p.includes('bold') || p.includes('adventurous') || p.includes('grand')) {
+        ctx.font = `700 ${fontSize}px 'Chewy', cursive`;
+    }
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+
     const lineHeight = fontSize * 1.2;
-    wrapText(ctx, text, canvas.width / 2, canvas.height - textBgHeight / 2, canvas.width - 40, lineHeight);
+    const textYPosition = (canvas.height - textBgHeight / 2) + yOffset;
+    wrapText(ctx, text, canvas.width / 2, textYPosition, canvas.width - 60, lineHeight);
+    
+    // Reset shadow for next draw operation
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
 };
 
 
-export const generateVideo = async (pages: StoryPage[], onProgress: (message: string) => void): Promise<void> => {
+export const generateVideo = async (pages: StoryPage[], musicUrl: string, onProgress: (message: string) => void): Promise<void> => {
     onProgress('Initializing video tools...');
+    const hasNarration = !!pages[0]?.audioUrl;
+
+    await document.fonts.load("48px 'Chewy'");
+    await document.fonts.load("48px 'Pacifico'");
     
     const canvas = document.createElement('canvas');
     canvas.width = 1920;
@@ -93,34 +128,58 @@ export const generateVideo = async (pages: StoryPage[], onProgress: (message: st
         }))
     );
     
-    onProgress('Loading music...');
-    const audioContext = new AudioContext();
-    const audioBuffer = await fetch(MUSIC_URL)
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(`Failed to fetch audio: ${res.status} ${res.statusText}`);
-            }
-            return res.arrayBuffer();
-        })
-        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-        .catch(err => {
-             console.error("Audio loading/decoding failed:", err);
-             throw new Error('Failed to load or decode audio. Please check your network connection.');
+    onProgress('Preparing audio mix...');
+    
+    const pageTimings: {start: number; duration: number}[] = [];
+    let cumulativeTime = 0;
+    for(const page of pages) {
+        const duration = hasNarration ? (page.audioDuration! * 1000) : PAGE_DURATION_MS;
+        pageTimings.push({ start: cumulativeTime, duration: duration });
+        cumulativeTime += duration;
+    }
+    const totalVideoDurationMs = cumulativeTime;
+    
+    // Use OfflineAudioContext to mix all audio tracks into one
+    const audioRenderContext = new OfflineAudioContext(2, Math.ceil(totalVideoDurationMs * 44.1), 44100);
+
+    // 1. Background Music Track
+    const musicBuffer = await fetch(musicUrl).then(res => res.arrayBuffer()).then(buffer => audioRenderContext.decodeAudioData(buffer));
+    const musicSource = audioRenderContext.createBufferSource();
+    musicSource.buffer = musicBuffer;
+    musicSource.loop = true;
+    const musicGain = audioRenderContext.createGain();
+    musicGain.gain.setValueAtTime(hasNarration ? 0.1 : 0.25, 0);
+    musicSource.connect(musicGain);
+    musicGain.connect(audioRenderContext.destination);
+
+    // 2. Narration Tracks (if they exist)
+    if (hasNarration) {
+        onProgress('Mixing narration...');
+        const narrationBuffers = await Promise.all(
+            pages.map(page => fetch(page.audioUrl!).then(res => res.arrayBuffer()).then(buffer => audioRenderContext.decodeAudioData(buffer)))
+        );
+        narrationBuffers.forEach((buffer, index) => {
+            const narrationSource = audioRenderContext.createBufferSource();
+            narrationSource.buffer = buffer;
+            narrationSource.connect(audioRenderContext.destination);
+            narrationSource.start(pageTimings[index].start / 1000); // start time in seconds
         });
-        
-    const audioSource = audioContext.createBufferSource();
-    audioSource.buffer = audioBuffer;
-    audioSource.loop = true;
+    }
 
-    const dest = audioContext.createMediaStreamDestination();
-    audioSource.connect(dest);
+    const mixedAudioBuffer = await audioRenderContext.startRendering();
+    
+    const finalAudioContext = new AudioContext();
+    const audioDestination = finalAudioContext.createMediaStreamDestination();
+    const finishedBufferSource = finalAudioContext.createBufferSource();
+    finishedBufferSource.buffer = mixedAudioBuffer;
+    finishedBufferSource.connect(audioDestination);
 
-    const videoStream = canvas.captureStream(30); // 30 FPS
-    const combinedStream = new MediaStream([...videoStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+    const videoStream = canvas.captureStream(30);
+    const combinedStream = new MediaStream([...videoStream.getVideoTracks(), ...audioDestination.stream.getAudioTracks()]);
 
     const recorder = new MediaRecorder(combinedStream, { 
         mimeType: 'video/webm',
-        videoBitsPerSecond: 8000000, // High bitrate for 1080p
+        videoBitsPerSecond: 8000000,
      });
     const chunks: Blob[] = [];
 
@@ -144,38 +203,44 @@ export const generateVideo = async (pages: StoryPage[], onProgress: (message: st
             URL.revokeObjectURL(url);
             onProgress('Video ready!');
             cancelAnimationFrame(animationFrameId);
-            audioContext.close();
+            finalAudioContext.close();
             resolve();
         };
 
         recorder.onerror = (e) => {
             cancelAnimationFrame(animationFrameId);
-            audioContext.close();
+            finalAudioContext.close();
             reject(new Error('MediaRecorder error: ' + e));
         };
 
         recorder.start();
-        audioSource.start(0);
-
-        const totalVideoDuration = pages.length * PAGE_DURATION_MS;
+        musicSource.start(0);
+        finishedBufferSource.start(0);
+        
         let startTime: number | null = null;
         let lastProgressSecond = -1;
 
         const render = (timestamp: number) => {
-            if (!startTime) {
-                startTime = timestamp;
-            }
+            if (!startTime) startTime = timestamp;
             const elapsedTime = timestamp - startTime;
 
-            if (elapsedTime >= totalVideoDuration) {
-                if (recorder.state === 'recording') {
-                    recorder.stop();
-                }
+            if (elapsedTime >= totalVideoDurationMs) {
+                if (recorder.state === 'recording') recorder.stop();
+                return;
+            }
+            
+            const pageIndex = pageTimings.findIndex((t, i) => {
+                const nextStart = pageTimings[i+1]?.start ?? Infinity;
+                return elapsedTime >= t.start && elapsedTime < nextStart;
+            });
+
+            if (pageIndex === -1) { // Should not happen if stop condition is correct
+                if (recorder.state === 'recording') recorder.stop();
                 return;
             }
 
-            const pageIndex = Math.floor(elapsedTime / PAGE_DURATION_MS);
-            const timeIntoPage = elapsedTime % PAGE_DURATION_MS;
+            const timeIntoPage = elapsedTime - pageTimings[pageIndex].start;
+            const pageDuration = pageTimings[pageIndex].duration;
             
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -183,10 +248,9 @@ export const generateVideo = async (pages: StoryPage[], onProgress: (message: st
             const currentImage = images[pageIndex];
             drawImageWithLetterbox(ctx, canvas, currentImage);
             
-            const transitionPoint = PAGE_DURATION_MS - TRANSITION_DURATION_MS;
-            let textOpacity = 1;
+            const transitionPoint = pageDuration - TRANSITION_DURATION_MS;
+            let textOpacity = 1.0;
 
-            // Handle cross-fade transition
             if (timeIntoPage > transitionPoint && pageIndex < pages.length - 1) {
                 const transitionProgress = (timeIntoPage - transitionPoint) / TRANSITION_DURATION_MS;
                 const nextImage = images[pageIndex + 1];
@@ -195,23 +259,17 @@ export const generateVideo = async (pages: StoryPage[], onProgress: (message: st
                 drawImageWithLetterbox(ctx, canvas, nextImage);
                 ctx.globalAlpha = 1.0;
                 
-                // Fade out current text during transition
                 textOpacity = 1 - transitionProgress;
-            } else {
-                // Handle normal text fade in/out
-                if (timeIntoPage < TEXT_FADE_DURATION_MS) {
-                    textOpacity = timeIntoPage / TEXT_FADE_DURATION_MS;
-                } else if (timeIntoPage > transitionPoint - TEXT_FADE_DURATION_MS && pageIndex < pages.length - 1) {
-                    textOpacity = (transitionPoint - timeIntoPage) / TEXT_FADE_DURATION_MS;
-                }
+            } else if (timeIntoPage < TEXT_FADE_DURATION_MS) {
+                textOpacity = timeIntoPage / TEXT_FADE_DURATION_MS;
             }
             
-            const currentText = pages[pageIndex].text;
-            drawTextOverlay(ctx, canvas, currentText, textOpacity);
+            const currentPageData = pages[pageIndex];
+            drawTextOverlay(ctx, canvas, currentPageData.text, textOpacity, currentPageData.textEffect, elapsedTime);
 
             const currentSecond = Math.floor(elapsedTime / 1000);
             if(currentSecond > lastProgressSecond) {
-                onProgress(`Encoding: ${currentSecond}s / ${Math.ceil(totalVideoDuration / 1000)}s`);
+                onProgress(`Encoding: ${currentSecond}s / ${Math.ceil(totalVideoDurationMs / 1000)}s`);
                 lastProgressSecond = currentSecond;
             }
             

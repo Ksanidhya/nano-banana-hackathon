@@ -2,6 +2,9 @@
 export interface StoryPage {
   text: string;
   imageUrl: string;
+  textEffect: string;
+  audioUrl?: string;
+  audioDuration?: number;
 }
 
 export interface StoryStructure {
@@ -9,6 +12,7 @@ export interface StoryStructure {
   pages: {
     scene: string;
     imagePrompt: string;
+    textEffectPrompt: string;
   }[];
 }
 

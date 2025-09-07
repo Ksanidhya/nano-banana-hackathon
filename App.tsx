@@ -16,8 +16,9 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const [storyTitle, setStoryTitle] = useState('');
+  const [musicUrl, setMusicUrl] = useState('');
 
-  const handleStoryGeneration = useCallback(async (prompt: string, image: File | null) => {
+  const handleStoryGeneration = useCallback(async (prompt: string, image: File | null, enableNarration: boolean, elevenLabsApiKey: string) => {
     setAppState(AppState.LOADING);
     setError(null);
     setStoryPages([]);
@@ -25,11 +26,14 @@ function App() {
     setIsGenerating(true);
     setTotalPages(0);
     setStoryTitle('');
+    setMusicUrl('');
 
     try {
       await generateStoryAndImages(
         prompt,
         image,
+        enableNarration,
+        elevenLabsApiKey,
         (progress) => setProgressMessage(progress),
         (page) => {
           setStoryPages(prevPages => [...prevPages, page]);
@@ -37,9 +41,10 @@ function App() {
             setAppState(AppState.PREVIEW);
           }
         },
-        (total, title) => {
+        (total, title, url) => {
             setTotalPages(total);
             setStoryTitle(title);
+            setMusicUrl(url);
         }
       );
     } catch (err) {
@@ -60,6 +65,7 @@ function App() {
     setIsGenerating(false);
     setTotalPages(0);
     setStoryTitle('');
+    setMusicUrl('');
   };
   
   const handleWatchVideo = () => {
@@ -80,6 +86,7 @@ function App() {
             progressMessage={progressMessage}
             totalPages={totalPages}
             storyTitle={storyTitle}
+            musicUrl={musicUrl}
           />
         );
       case AppState.ERROR:
@@ -89,7 +96,7 @@ function App() {
             <p className="text-red-600 mb-6">{error}</p>
             <button
               onClick={handleReset}
-              className="px-6 py-2 bg-red-600 text-white font-semibold rounded-full hover:bg-red-700 transition-colors"
+              className="px-6 py-2 text-lg font-semibold text-white bg-red-600 rounded-full hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300"
             >
               Try Again
             </button>
@@ -102,24 +109,26 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="py-6 px-4 sm:px-8 border-b border-slate-200">
-        <div className="max-w-5xl mx-auto flex items-center justify-center sm:justify-start space-x-3">
-          <LogoIcon className="h-10 w-10 text-rose-500" />
-          <h1 className="font-title text-3xl text-slate-700">
-            AI Bedtime Story Weaver
-          </h1>
-        </div>
-      </header>
-      <main className="py-10 px-4 sm:px-8">
-        <div className="max-w-5xl mx-auto">
+    <div className="bg-rose-50 min-h-screen">
+      <main className="container mx-auto px-4 py-8 md:py-12">
+        <header className="text-center mb-8 md:mb-12">
+          <div className="inline-flex items-center gap-3 mb-2">
+            <LogoIcon className="h-10 w-10 text-rose-500" />
+            <h1 className="text-4xl md:text-5xl font-bold font-title text-slate-800">
+              AI Bedtime Story Weaver
+            </h1>
+          </div>
+          <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto">
+            Weave magical tales and illustrations for your little ones in seconds.
+          </p>
+        </header>
+        <div className="max-w-4xl mx-auto">
           {renderContent()}
         </div>
+        {showVideo && (
+          <VideoPlayer pages={storyPages} onClose={() => setShowVideo(false)} musicUrl={musicUrl} />
+        )}
       </main>
-      <footer className="text-center py-6 text-sm text-slate-500 border-t border-slate-200">
-        <p>Crafted with AI by a world-class senior frontend React engineer.</p>
-      </footer>
-      {showVideo && <VideoPlayer pages={storyPages} onClose={() => setShowVideo(false)} />}
     </div>
   );
 }

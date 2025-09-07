@@ -1,9 +1,8 @@
-
 import React, { useState, useRef } from 'react';
 import { UploadIcon, SparklesIcon } from './Icons';
 
 type StoryInputFormProps = {
-  onGenerate: (prompt: string, image: File | null) => void;
+  onGenerate: (prompt: string, image: File | null, enableNarration: boolean, elevenLabsApiKey: string) => void;
 };
 
 export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) => {
@@ -11,6 +10,8 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [enableNarration, setEnableNarration] = useState(false);
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,8 +46,12 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (prompt.trim() && !isGenerating) {
+      if (enableNarration && !elevenLabsApiKey.trim()) {
+          alert('Please enter your ElevenLabs API Key to enable narration.');
+          return;
+      }
       setIsGenerating(true);
-      onGenerate(prompt, imageFile);
+      onGenerate(prompt, imageFile, enableNarration, elevenLabsApiKey);
     }
   };
 
@@ -105,6 +110,35 @@ export const StoryInputForm: React.FC<StoryInputFormProps> = ({ onGenerate }) =>
           />
         </div>
         
+        <div className="mb-8 p-4 bg-slate-50 rounded-lg">
+            <label className="flex items-center justify-between cursor-pointer">
+                <div className="mr-3">
+                    <p className="block text-lg font-semibold text-slate-700">Add Narration (Text-to-Speech)</p>
+                    <p className="text-sm text-slate-500">Generates a voiceover for the story. <br/><strong className="text-slate-600">(Requires ElevenLabs API Key)</strong></p>
+                </div>
+                <div className="relative">
+                    <input type="checkbox" className="peer sr-only" checked={enableNarration} onChange={() => setEnableNarration(!enableNarration)} />
+                    <div className="block bg-slate-300 w-14 h-8 rounded-full peer-checked:bg-rose-500 transition"></div>
+                    <div className="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform peer-checked:translate-x-6"></div>
+                </div>
+            </label>
+             {enableNarration && (
+                <div className="mt-4">
+                    <label htmlFor="elevenlabs-key" className="block text-sm font-semibold text-slate-600 mb-2">
+                        ElevenLabs API Key
+                    </label>
+                    <input
+                        id="elevenlabs-key"
+                        type="password"
+                        value={elevenLabsApiKey}
+                        onChange={(e) => setElevenLabsApiKey(e.target.value)}
+                        placeholder="Enter your API Key here"
+                        className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition"
+                    />
+                </div>
+            )}
+        </div>
+
         <button
           type="submit"
           disabled={!prompt.trim() || isGenerating}

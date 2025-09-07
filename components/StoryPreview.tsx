@@ -12,9 +12,33 @@ type StoryPreviewProps = {
   progressMessage: string;
   totalPages: number;
   storyTitle: string;
+  musicUrl: string;
 };
 
-export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWatchVideo, isGenerating, progressMessage, totalPages, storyTitle }) => {
+export const getTextStyleFromPrompt = (prompt: string): { className: string; style: React.CSSProperties } => {
+    if (!prompt) return { className: '', style: {} };
+    
+    const p = prompt.toLowerCase();
+    let className = '';
+    const style: React.CSSProperties = {};
+
+    if (p.includes('sparkl') || p.includes('glitter')) {
+      className += ' text-effect-sparkle';
+    }
+    if (p.includes('float') || p.includes('gentle')) {
+      className += ' text-effect-float';
+    }
+    if (p.includes('handwritten') || p.includes('cursive')) {
+      className += ' font-handwritten';
+    }
+    if (p.includes('bold') || p.includes('adventurous') || p.includes('grand')) {
+      className += ' text-effect-bold';
+    }
+
+    return { className: className.trim(), style };
+};
+
+export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWatchVideo, isGenerating, progressMessage, totalPages, storyTitle, musicUrl }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState('');
@@ -48,19 +72,25 @@ export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWa
   }, [pages]);
   
   const handleGenerateVideo = useCallback(async () => {
+    if (!musicUrl) {
+      alert("Music is still being selected. Please wait a moment and try again.");
+      return;
+    }
     setIsGeneratingVideo(true);
     setVideoProgress('');
     try {
-      await generateVideo(pages, (message) => setVideoProgress(message));
+      await generateVideo(pages, musicUrl, (message) => setVideoProgress(message));
     } catch (error) {
         console.error("Video generation failed:", error);
         alert(`Could not generate video. Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
         setIsGeneratingVideo(false);
     }
-  }, [pages]);
+  }, [pages, musicUrl]);
 
   const displayTitle = storyTitle || (pages.length > 0 ? pages[0].text : 'Your Story');
+  const currentTextEffect = pages[currentPage]?.textEffect || '';
+  const { className: textEffectClass, style: textEffectStyle } = getTextStyleFromPrompt(currentTextEffect);
 
   return (
     <div className="animate-fade-in" ref={previewRef}>
@@ -68,13 +98,13 @@ export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWa
         <div className="p-6 md:p-8">
             <h2 className="text-3xl font-bold font-title text-slate-800 text-center mb-6">{displayTitle}</h2>
         </div>
-        <div className="relative aspect-[4/3] bg-slate-100">
+        <div className="relative aspect-[16/9] bg-slate-100">
           {pages.map((page, index) => (
             <div
               key={index}
               className={`absolute inset-0 transition-opacity duration-500 ${index === currentPage ? 'opacity-100' : 'opacity-0'}`}
             >
-              <img src={page.imageUrl} alt={`Story page ${index + 1}`} className="w-full h-full object-cover" />
+              <img src={page.imageUrl} alt={`Story page ${index + 1}`} className="w-full h-full object-contain" />
             </div>
           ))}
            {isGenerating && pages.length < totalPages && (
@@ -84,8 +114,11 @@ export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWa
           )}
         </div>
         <div className="p-6 md:p-8 bg-slate-50">
-            <p className="text-slate-600 text-lg leading-relaxed h-24 text-center flex items-center justify-center">
-                {pages[currentPage] ? (currentPage > 0 ? pages[currentPage].text : "The beginning of your magical journey...") : "Loading page..."}
+            <p 
+              className={`font-chewy text-[#B8860B] text-xl lg:text-2xl leading-relaxed h-24 text-center flex items-center justify-center px-4 ${textEffectClass}`}
+              style={textEffectStyle}
+            >
+                {pages[currentPage]?.text || "Loading page..."}
             </p>
         </div>
         
@@ -161,10 +194,10 @@ export const StoryPreview: React.FC<StoryPreviewProps> = ({ pages, onReset, onWa
             className="w-[1684px] h-[1190px] bg-white flex flex-col"
           >
             <div className="w-full h-[800px] bg-slate-100">
-                <img src={page.imageUrl} alt="" className="w-full h-full object-cover" crossOrigin="anonymous"/>
+                <img src={page.imageUrl} alt="" className="w-full h-full object-contain" crossOrigin="anonymous"/>
             </div>
             <div className="flex-grow flex items-center justify-center p-8">
-              <p style={{ fontFamily: 'Poppins, sans-serif', fontSize: '44px', textAlign: 'center' }}>{page.text}</p>
+              <p style={{ fontFamily: 'Chewy, cursive', fontSize: '48px', color: '#B8860B', textAlign: 'center' }}>{page.text}</p>
             </div>
              <div className="text-right p-4 text-2xl text-slate-400" style={{ fontFamily: 'Poppins, sans-serif' }}>
               {index > 0 ? `Page ${index}`: ''}
